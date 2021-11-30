@@ -37,7 +37,7 @@ io.on('connection', function (socket) {
     }
 
     socket.on('join', function (account, player_num) {
-		g_maxJoinCount = player_num;
+		// g_maxJoinCount = player_num;
         // 顶号/断线重连
         if (g_onlines[account]) {
             g_onlines[account].socket.emit('system', "被顶号了")
