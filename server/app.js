@@ -36,7 +36,8 @@ io.on('connection', function (socket) {
         }
     }
 
-    socket.on('join', function (account) {
+    socket.on('join', function (account, player_num) {
+		g_maxJoinCount = player_num;
         // 顶号/断线重连
         if (g_onlines[account]) {
             g_onlines[account].socket.emit('system', "被顶号了")
@@ -130,8 +131,15 @@ function stepUpdate() {
     // 发送指令
     var commands = new Array()
     for (var key in message) {
-        commands.push(message[key])
+		if (message[key].direction) {
+			commands.push(message[key])
+		}
     }
+	if (commands.length == 0) {
+		return;
+	}
+	g_stepTime++
+	console.log(`update command ${JSON.stringify(message)}`);
     g_commands_histroy.push(commands)
     for (var key in g_onlines) {
         g_onlines[key].socket.emit('message', new Array(commands))
@@ -146,7 +154,7 @@ function update(dt) {
     if (g_gameStatus == STATUS.START) {
         stepUpdateCounter += dt
         if (stepUpdateCounter >= g_stepInterval) {
-            g_stepTime++
+            // g_stepTime++
             stepUpdate()
             stepUpdateCounter -= g_stepInterval
         }

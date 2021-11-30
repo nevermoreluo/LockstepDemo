@@ -22,6 +22,12 @@ var STATUS = {
 	START:2
 }
 
+var MOVE_STYLE = {
+	KEEP_RUNING:1,
+	MOVE_FOR_STEP:2
+}
+
+
 // 游戏宽高
 var WIDTH = 320
 var HEIGHT = 400
@@ -90,8 +96,11 @@ $(function () {
 	var runningCommands = null
 	// 当前用户
 	var currentAccount = null
+	var player_num = 2
 	// 是否正在加速运行延迟到达的包
 	var isFastRunning = false
+
+	var moveStyle = MOVE_STYLE.KEEP_RUNING;
 
 	// 初始化UI显示
 	$("#content").hide()
@@ -111,6 +120,7 @@ $(function () {
 		if(localStorage.account) {
 			setTimeout(function () {
 				$("#account").val(localStorage.account)
+				$("#player_num").val(localStorage.player_num)
 				localStorage.account = ""
 				$('#start_btn').click()
 			}, 0)
@@ -183,6 +193,7 @@ $(function () {
 			return
 		}
 		var direction = inputDirection
+		// console.log(direction)
 		socket.emit("message", {
 			direction: direction,
 			step:stepTime,
@@ -204,6 +215,21 @@ $(function () {
 				stepUpdateCounter -= stepInterval
 			}
 
+			if (moveStyle == MOVE_STYLE.KEEP_RUNING) {
+				// 原本是通过服务端不断的发送step实现的
+				// 将服务器改成只有变动时发送包后，通过本地数据模拟补间
+				if (recvCommands.length <= 0) {
+					
+					var cmd = new Array();
+					for (var key in gameObjects) {
+						cmd.push({id:key})		
+					}
+					recvCommands.push(cmd)
+					// console.log(`debug recv cmd ${recvCommands.length}, ${JSON.stringify(recvCommands)}`)
+				}
+			}
+
+
 			// 积攒的包过多时要加速运行
 			var scale = Math.ceil(recvCommands.length / 3)
 			if(scale > 10) scale = 10
@@ -220,11 +246,12 @@ $(function () {
 				}
 				for (var i = 0; i < runningCommands.length; i++) {
 					var command = runningCommands[i]
-					if(runningCommands.ms == stepInterval) console.log(command)
+					if(runningCommands.ms == stepInterval) console.log(`run command ${JSON.stringify(command)}, ${stepInterval}`)
 					var obj = gameObjects[command.id]
 					if(command.direction) {
 						obj.direction = command.direction
 					}
+					// console.log(`obj: ${command.id} move , ${ms}, ${JSON.stringify(command)}`)
 					obj.move(ms)
 				}
 				runningCommands.ms = runningCommands.ms - ms
@@ -295,13 +322,22 @@ $(function () {
 	// 开始游戏
 	$('#start_btn').click(function(){
 		currentAccount = $("#account").val()
+		player_num = $("#player_num").val()
 		if(isConnected == false) {
 			showTips("连接服务器失败！")
 		} else if(currentAccount == "") {
 			showTips("账号不能为空！")
 		} else {
-			socket.emit("join", currentAccount)
+			socket.emit("join", currentAccount, player_num)
 		}
+	})
+
+	$('#keep_runing_btn').click(function() {
+		moveStyle = MOVE_STYLE.KEEP_RUNING;
+	})
+
+	$('#move_step_btn').click(function() {
+		moveStyle = MOVE_STYLE.MOVE_FOR_STEP;
 	})
 
 	// 断线重连
