@@ -3,9 +3,13 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"start": "node app"
+		"serve": "node server/app",
+		"web": "http-server ./client"
 	},
 	"dependencies": {
 		"socket.io": ">=0.9.16"
+	},
+	"devDependencies": {
+		"http-server": "^14.0.0"
 	}
 }
